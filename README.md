@@ -127,6 +127,179 @@ When using other proxy servers, set the proxy server URL using either the enviro
 For more details, please visit:
 [Working around IP bans - YouTube Transcript API](https://github.com/jdepoix/youtube-transcript-api?tab=readme-ov-file#working-around-ip-bans-requestblocked-or-ipblocked-exception).
 
+## Remote Deployment
+
+### Deploying to Railway
+
+This MCP server can be deployed to [Railway](https://railway.app) for remote access via HTTP transport.
+
+#### Prerequisites
+- A Railway account (sign up at [railway.app](https://railway.app))
+- GitHub repository connected to Railway
+
+#### Deployment Steps
+
+1. **Fork or clone this repository** to your GitHub account
+
+2. **Create a new project on Railway**:
+   - Go to [railway.app](https://railway.app) and click "New Project"
+   - Select "Deploy from GitHub repo"
+   - Choose your repository
+
+3. **Configure the deployment**:
+   - Railway will automatically detect the `railway.toml` configuration
+   - The service will use `Dockerfile.railway` for the build
+   - Railway automatically sets the `PORT` environment variable
+
+4. **Set optional environment variables** (if needed):
+   - `RESPONSE_LIMIT`: Maximum characters per response (default: 50000)
+   - `WEBSHARE_PROXY_USERNAME`: Webshare proxy username
+   - `WEBSHARE_PROXY_PASSWORD`: Webshare proxy password
+   - `HTTP_PROXY`: HTTP proxy server URL
+   - `HTTPS_PROXY`: HTTPS proxy server URL
+
+5. **Deploy**: Railway will automatically build and deploy your server
+
+6. **Get your deployment URL**: After deployment, Railway will provide a URL like `https://your-service.railway.app`
+
+#### Connecting to Remote Server
+
+> [!IMPORTANT]
+> Claude Desktop **Free** version does **NOT** support remote MCP servers.
+> You need Claude Desktop **Pro** or use **Cursor** to connect to remote MCP servers.
+
+**For Claude Desktop Pro**, add to your `claude_desktop_config.json`:
+```json
+{
+  "mcpServers": {
+    "youtube-transcript": {
+      "url": "https://your-service.railway.app"
+    }
+  }
+}
+```
+
+**For Cursor**, add to your MCP settings:
+```json
+{
+  "mcpServers": {
+    "youtube-transcript": {
+      "url": "https://your-service.railway.app"
+    }
+  }
+}
+```
+
+### Deploying to VPS with Docker Compose
+
+For deployment to a traditional VPS or any server with Docker installed:
+
+1. **Copy the repository** to your server
+
+2. **Run with Docker Compose**:
+   ```bash
+   # Start the service
+   docker-compose up -d
+
+   # View logs
+   docker-compose logs -f
+
+   # Stop the service
+   docker-compose down
+
+   # Rebuild after code changes
+   docker-compose up -d --build
+   ```
+
+3. **Configure your firewall** to allow access to port 8000
+
+4. **Connect using your server's IP or domain**:
+   ```json
+   {
+     "mcpServers": {
+       "youtube-transcript": {
+         "url": "http://your-server-ip:8000"
+       }
+     }
+   }
+   ```
+
+### Local Testing with HTTP Transport
+
+To test the HTTP transport locally before deploying:
+
+```bash
+# Run with HTTP transport
+uv run mcp-youtube-transcript --transport http --host 127.0.0.1 --port 8000
+
+# Or use Docker Compose
+docker-compose up
+```
+
+The server will be available at `http://localhost:8000`.
+
+## Integration with n8n
+
+> [!IMPORTANT]
+> n8n's MCP Client Tool **only supports SSE transport** (not HTTP Streamable).
+> You must deploy the server with `--transport sse` for n8n compatibility.
+
+### Deploying for n8n
+
+#### Option 1: Railway with SSE
+
+Modify `railway.toml` to use the n8n-compatible Dockerfile:
+
+```toml
+[build]
+builder = "dockerfile"
+dockerfilePath = "Dockerfile.n8n"  # Changed from Dockerfile.railway
+```
+
+Then deploy to Railway as described above.
+
+#### Option 2: VPS with Docker Compose
+
+```bash
+# Use the n8n-specific docker-compose file
+docker-compose -f docker-compose.n8n.yml up -d
+```
+
+#### Option 3: Manual Command
+
+```bash
+# Run with SSE transport
+uv run mcp-youtube-transcript --transport sse --host 0.0.0.0 --port 8000
+```
+
+### Configuring n8n MCP Client Tool
+
+1. **Add MCP Client Tool node** to your n8n workflow
+
+2. **Configure the SSE Endpoint**:
+   - **SSE Endpoint**: `http://your-server-ip:8000` (or your Railway URL)
+   - **Authentication**: Select "None" (unless you add auth to the server)
+
+3. **Select Tools**:
+   - Choose "All" to expose all tools (`get_transcript` and `get_video_info`)
+   - Or select specific tools manually
+
+4. **Connect to AI Agent**: Link the MCP Client Tool to your AI Agent node
+
+### Example n8n Workflow
+
+```
+Trigger → AI Agent → MCP Client Tool (YouTube Transcript)
+                  ↓
+            Process transcript
+                  ↓
+            Send to output
+```
+
+The MCP Client Tool will provide access to:
+- `get_transcript`: Fetch YouTube video transcripts
+- `get_video_info`: Get video metadata (title, description, uploader)
+
 ## License
 
 This application is licensed under the MIT License. See the [LICENSE](LICENSE) file for more details.

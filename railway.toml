@@ -1,0 +1,24 @@
+# Railway configuration file
+# https://docs.railway.com/reference/config-as-code
+
+[build]
+# Use Dockerfile.n8n for SSE transport (n8n compatibility)
+builder = "dockerfile"
+dockerfilePath = "Dockerfile.n8n"
+
+[deploy]
+# Health check configuration (optional, may not work for SSE)
+# healthcheckPath = "/"
+# healthcheckTimeout = 100
+# Restart policy
+restartPolicyType = "on_failure"
+restartPolicyMaxRetries = 10
+
+# Environment variables can be set in Railway dashboard
+# PORT is automatically set by Railway
+# Optional variables you can set:
+# - RESPONSE_LIMIT (default: 50000)
+# - WEBSHARE_PROXY_USERNAME
+# - WEBSHARE_PROXY_PASSWORD
+# - HTTP_PROXY
+# - HTTPS_PROXY
